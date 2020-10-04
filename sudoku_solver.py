@@ -109,6 +109,23 @@ def update_sudoku_pf(pfp, sudoku):
                     is_solved = False
     return is_solved
 
+def solve_sudoku(sudoku):
+    sudoku_pf = np.copy(sudoku)
+    pfp = init_pfp(sudoku_pf)
+    counter = 0
+    while True:
+        print(counter)
+        print(sudoku_pf)
+        counter += 1
+        maintainance_pfp(pfp, sudoku_pf)
+        if update_sudoku_pf(pfp, sudoku_pf):
+            break
+
+    print(counter)
+    print(sudoku_pf)
+
+
+
 sudoku_initial_pf = np.asarray(
     [[0,0,0,9,0,0,7,2,8],
     [2,7,8,0,0,3,0,1,0],
@@ -123,15 +140,3 @@ sudoku_initial_pf = np.asarray(
 
 sudoku_pf = np.copy(sudoku_initial_pf)
 pfp = init_pfp(sudoku_pf)
-
-counter = 0
-while True:
-    print(counter)
-    print(sudoku_pf)
-    counter += 1
-    maintainance_pfp(pfp, sudoku_pf)
-    if update_sudoku_pf(pfp, sudoku_pf):
-        break
-
-print(counter)
-print(sudoku_pf)
