@@ -1,16 +1,26 @@
 import numpy as np
 
-def init_pfp():
+"""
+In this script a sudoku puzzle is represented as a 
+9 by 9 array called sudoku_pf, each field containing it's corresponding number,
+or 0 if the number hasn't been determined yet.
+A second array, called pfp, is maintained to hold a list of the possible numbers
+for each field, which is empty if the number is already determined.
+
+"""
+
+# Initializes a new pfp for the given sudoku
+def init_pfp(sudoku):
     pfp = np.zeros(shape=(9,9), dtype=list)
     for i in np.arange(9):
         for j in np.arange(9):
             # Check, if field has already an assigned value
-            if (sudoku_pf[i,j] == 0):
+            if (sudoku[i,j] == 0):
                 pfp[i,j] = [1,2,3,4,5,6,7,8,9]
             else: pfp[i,j] = []
     return pfp
 
-
+# Maintains the given pfp with respect to the entries of the given sudoku
 def maintainance_pfp(pfp, sudoku):
     # Check row and update pfp accordingly
     def check_row(rindex, pfp_entry, sudoku):
@@ -88,6 +98,7 @@ def maintainance_pfp(pfp, sudoku):
                 check_col(j, pfp[i,j], sudoku)
                 check_square(i, j, pfp[i,j], sudoku)
 
+# Updates the given sudoku with respect to the given pfp
 def update_sudoku_pf(pfp, sudoku):
     is_solved = True
     for i in np.arange(9):
@@ -111,10 +122,12 @@ sudoku_initial_pf = np.asarray(
     dtype=int)
 
 sudoku_pf = np.copy(sudoku_initial_pf)
-pfp = init_pfp()
+pfp = init_pfp(sudoku_pf)
 
 counter = 0
 while True:
+    print(counter)
+    print(sudoku_pf)
     counter += 1
     maintainance_pfp(pfp, sudoku_pf)
     if update_sudoku_pf(pfp, sudoku_pf):
