@@ -1,5 +1,8 @@
 import numpy as np
 import cv2
+from sympy.solvers import solve
+from sympy import Symbol
+
 
 def preprocessing(image, ksize, can_thres_min, can_thres_max):
     image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -24,6 +27,18 @@ def draw_lines(image, lines):
         cv2.line(image_lines,(x1,y1),(x2,y2),(0,0,255),2)
 
     return image_lines
+
+def draw_points(image, points):
+    if points is None:
+        return image
+
+    image_points = np.copy(image)
+
+    for line in points:
+        for point in line:
+            cv2.circle(image_points, point, 3, (0, 255, 0), 5)
+
+    return image_points
 
 def filter_lines(lines):
     def remove_duplicate_lines(lines):
@@ -65,7 +80,7 @@ def filter_lines(lines):
             print(rho_diff_mean)
             print(rho_abs_deviations)
             print(rho_deviation_sum)"""
-        print(sudoku_lines)
+        
         return sudoku_lines
 
     vertical_lines=[]
@@ -89,9 +104,51 @@ def filter_lines(lines):
     
     return horizontal_lines, vertical_lines
 
+def get_intersections(h_lines, v_lines):
+    if (len(h_lines) != 10) or (len(v_lines) != 10):
+        return None
 
-#cap = cv2.VideoCapture(0)
-image = cv2.imread("sudoku2.JPG")
+    intersections = np.ndarray((10,10), tuple)
+
+    for i in np.arange(0, 10):
+        h_line = h_lines[i]
+        for j in np.arange(0, 10):
+            v_line = v_lines[j]
+            h_rho, h_theta = h_line
+            v_rho, v_theta = v_line
+            x_i, y_i = 0, 0
+
+            if (v_theta == 0):
+                x_i = v_rho
+            else:
+                x_i = ((h_rho * np.sin(v_theta)) - (v_rho * np.sin(h_theta))) / \
+                    ((np.cos(h_theta) * np.sin(v_theta)) - (np.cos(v_theta) * np.sin(h_theta)))
+            y_i = ((h_rho / np.sin(h_theta)) - (x_i * (np.cos(h_theta) / np.sin(h_theta))))
+            
+            intersections[i,j] = (x_i, y_i)
+
+    return intersections
+
+def extract_fields(image, intersections):
+    if intersections is None:
+        return None
+
+    fields = np.ndarray((10,10), np.ndarray)
+
+    for i in np.arange(0, 9):
+        for j in np.arange(0, 9):
+            upper_left = intersections[i,j]
+            upper_right = intersections[i,j+1]
+            lower_left = intersections[i+1,j]
+            lower_right = intersections[i+1,j+1]
+            
+            fields[i,j] = image[int(np.max((upper_left[1], upper_right[1]))):int(np.min((lower_left[1], lower_right[1]))), \
+                int(np.max((upper_left[0], lower_left[0]))):int(np.min((upper_right[0], lower_right[0])))]
+
+    return fields
+
+cap = cv2.VideoCapture("sudoku2.mp4")
+"""image = cv2.imread("sudoku3.JPG")
 image_prep = preprocessing(image, (5,5), 40, 100)
 
 # Line detection
@@ -100,18 +157,47 @@ lines = cv2.HoughLines(image_prep, 1, np.pi/180, 260)
 # Filter Lines
 horizontal_lines, vertical_lines = filter_lines(lines)
 
+# Get intersections
+intersections = get_intersections(horizontal_lines, vertical_lines)
+
+# Extract fields
+fields = extract_fields(image, intersections)
+
+
 # Draw Lines
 image_lines = draw_lines(image, horizontal_lines)
 image_lines = draw_lines(image_lines, vertical_lines)
+image_intersects = draw_points(image_lines, intersections)"""
 
 ret_val = True
 
 while ret_val:
-    #ret_val, input = cap.read()
+    ret_val, image = cap.read()
+
+    image_prep = preprocessing(image, (5,5), 40, 100)
+
+    # Line detection
+    lines = cv2.HoughLines(image_prep, 1, np.pi/180, 260)
+
+    # Filter Lines
+    horizontal_lines, vertical_lines = filter_lines(lines)
+
+    # Get intersections
+    intersections = get_intersections(horizontal_lines, vertical_lines)
+
+    # Extract fields
+    fields = extract_fields(image, intersections)
+
+
+    # Draw Lines
+    image_lines = draw_lines(image, horizontal_lines)
+    image_lines = draw_lines(image_lines, vertical_lines)
+    image_intersects = draw_points(image_lines, intersections)
 
     #cv2.imshow("Original", image)
-    cv2.imshow("Image Prep", image_prep)
-    cv2.imshow("Image lines", image_lines)    
+    #cv2.imshow("Image Prep", image_prep)
+    cv2.imshow("Image Intersects", image_intersects)
+    #cv2.imshow("Field 8,8", fields[8,8])
 
     key = cv2.waitKey(1)
     if (key == 27):
