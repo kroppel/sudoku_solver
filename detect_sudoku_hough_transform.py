@@ -1,16 +1,16 @@
 import numpy as np
 import cv2
-from sympy.solvers import solve
-from sympy import Symbol
 
-
-def preprocessing(image, ksize, can_thres_min, can_thres_max):
+# Preprocesses the given image, returning a binary representation of it
+def preprocessing(image):
     image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     image_threshold = cv2.adaptiveThreshold(src=image_gray, maxValue=255, \
         adaptiveMethod=cv2.ADAPTIVE_THRESH_MEAN_C, thresholdType=cv2.THRESH_BINARY_INV, blockSize=15, C=6)
 
     return image_threshold
 
+# Draws the given lines onto a copy of the given image
+# and returns it
 def draw_lines(image, lines):
     image_lines = np.copy(image)
 
@@ -28,6 +28,8 @@ def draw_lines(image, lines):
 
     return image_lines
 
+# Draws the given points onto a copy of the given image
+# and returns it
 def draw_points(image, points):
     if points is None:
         return image
@@ -40,7 +42,11 @@ def draw_points(image, points):
 
     return image_points
 
+# Filters out irrelevant lines, returning the ten lines
+# that belong to the sudoku playing field
 def filter_lines(lines):
+    # Removes lines that are probably duplicates and returns
+    # the remaining ones
     def remove_duplicate_lines(lines):
         d_lines = []
         for line in lines:
@@ -54,6 +60,8 @@ def filter_lines(lines):
                 d_lines.append(line)
         return d_lines
 
+    # Removes lines that are probably not part of the 
+    # sudoku playing field and returns the remaining ones
     def keep_sudoku_lines(lines):
         lines.sort()
         sudoku_lines = lines
@@ -74,12 +82,6 @@ def filter_lines(lines):
             if deviation > rho_deviation_sum:
                 index, deviation = i, rho_deviation_sum
                 sudoku_lines = lines[i:i+10]
-            """print(i)
-            print("candidates: " + str(rho_candidates))
-            print("diffs: " + str(rho_diffs))
-            print(rho_diff_mean)
-            print(rho_abs_deviations)
-            print(rho_deviation_sum)"""
         
         return sudoku_lines
 
@@ -89,7 +91,7 @@ def filter_lines(lines):
     # Keep horizontal/vertical lines
     for line in lines:
         rho, theta = line[0]
-        if ((theta > 1.5) and (theta < 1.7)):
+        if ((theta > 1.52) and (theta < 1.62)):
             horizontal_lines.append((rho, theta))
         elif ((theta > -0.05) and (theta < 0.05)):      
             vertical_lines.append((rho, theta))
@@ -104,6 +106,8 @@ def filter_lines(lines):
     
     return horizontal_lines, vertical_lines
 
+# Computes the intersections of each horizontal line
+# with each vertical line
 def get_intersections(h_lines, v_lines):
     if (len(h_lines) != 10) or (len(v_lines) != 10):
         return None
@@ -129,6 +133,8 @@ def get_intersections(h_lines, v_lines):
 
     return intersections
 
+# Extracts the fields of the sudoku in the given image
+# using the given intersections as their boundaries
 def extract_fields(image, intersections):
     if intersections is None:
         return None
@@ -147,34 +153,17 @@ def extract_fields(image, intersections):
 
     return fields
 
-cap = cv2.VideoCapture("sudoku2.mp4")
-"""image = cv2.imread("sudoku3.JPG")
-image_prep = preprocessing(image, (5,5), 40, 100)
-
-# Line detection
-lines = cv2.HoughLines(image_prep, 1, np.pi/180, 260)
-
-# Filter Lines
-horizontal_lines, vertical_lines = filter_lines(lines)
-
-# Get intersections
-intersections = get_intersections(horizontal_lines, vertical_lines)
-
-# Extract fields
-fields = extract_fields(image, intersections)
-
-
-# Draw Lines
-image_lines = draw_lines(image, horizontal_lines)
-image_lines = draw_lines(image_lines, vertical_lines)
-image_intersects = draw_points(image_lines, intersections)"""
+cap = cv2.VideoCapture("sudoku2.mp4")    # Use video/webcam as input source
+#image = cv2.imread("sudoku3.JPG")       # Use image as input source
 
 ret_val = True
 
+# while-loop keeps reading images from the source until ret_val is false,
+# which means no image has been retrieved from the source
 while ret_val:
     ret_val, image = cap.read()
 
-    image_prep = preprocessing(image, (5,5), 40, 100)
+    image_prep = preprocessing(image)
 
     # Line detection
     lines = cv2.HoughLines(image_prep, 1, np.pi/180, 260)
@@ -194,6 +183,7 @@ while ret_val:
     image_lines = draw_lines(image_lines, vertical_lines)
     image_intersects = draw_points(image_lines, intersections)
 
+    # Some visualization of the (intermediate) results
     #cv2.imshow("Original", image)
     #cv2.imshow("Image Prep", image_prep)
     cv2.imshow("Image Intersects", image_intersects)
@@ -202,7 +192,3 @@ while ret_val:
     key = cv2.waitKey(1)
     if (key == 27):
         break
-    if (key == 43):
-        upper_bound[0] += 1
-    if (key == 45):
-        upper_bound[0] -= 1
