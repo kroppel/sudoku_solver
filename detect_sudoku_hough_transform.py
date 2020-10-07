@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from pytesseract import image_to_string
 
 # Preprocesses the given image, returning a binary representation of it
 def preprocessing(image):
@@ -66,7 +67,7 @@ def filter_lines(lines):
         lines.sort()
         sudoku_lines = lines
         rhos = []
-        index, deviation = 0, 1000
+        deviation = 1000
 
         for line in lines:
             rho, theta = line
@@ -80,7 +81,7 @@ def filter_lines(lines):
             rho_deviation_sum = np.sum(rho_abs_deviations)
 
             if deviation > rho_deviation_sum:
-                index, deviation = i, rho_deviation_sum
+                deviation = rho_deviation_sum
                 sudoku_lines = lines[i:i+10]
         
         return sudoku_lines
@@ -153,15 +154,15 @@ def extract_fields(image, intersections):
 
     return fields
 
-cap = cv2.VideoCapture("sudoku2.mp4")    # Use video/webcam as input source
-#image = cv2.imread("sudoku3.JPG")       # Use image as input source
+#cap = cv2.VideoCapture("sudoku2.mp4")    # Use video/webcam as input source
+image = cv2.imread("sudoku3.JPG")       # Use image as input source
 
 ret_val = True
 
 # while-loop keeps reading images from the source until ret_val is false,
 # which means no image has been retrieved from the source
 while ret_val:
-    ret_val, image = cap.read()
+    #ret_val, image = cap.read()
 
     image_prep = preprocessing(image)
 
@@ -188,6 +189,20 @@ while ret_val:
     #cv2.imshow("Image Prep", image_prep)
     cv2.imshow("Image Intersects", image_intersects)
     #cv2.imshow("Field 8,8", fields[8,8])
+
+    # OCR TEST
+    sudoku_pf = np.ndarray((9,9), str)
+
+    for i in np.arange(0,9):
+        for j in np.arange(0,9):
+            img = cv2.cvtColor(fields[i,j], cv2.COLOR_BGR2RGB)
+            img = img[10:len(img)-10, 10:len(img[0])-10]
+            result = image_to_string(img, config = r'--oem 0 --psm 10 tessedit_char_whitelist=0123456789')
+            print(result)
+            #sudoku_pf[i,j] = result if (result != "i") else 0
+
+    print(sudoku_pf)
+    break
 
     key = cv2.waitKey(1)
     if (key == 27):
