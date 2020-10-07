@@ -1,1 +1,3 @@
 *.JPG
+*.mp4
+__pycache__/
