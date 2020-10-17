@@ -1,13 +1,12 @@
 import numpy as np
 import cv2
-from pytesseract import image_to_string
 
 # Preprocesses the given image, returning a binary representation of it
 def preprocessing(image):
     image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     image_threshold = cv2.adaptiveThreshold(src=image_gray, maxValue=255, \
         adaptiveMethod=cv2.ADAPTIVE_THRESH_MEAN_C, thresholdType=cv2.THRESH_BINARY_INV, blockSize=15, C=6)
-
+    
     return image_threshold
 
 # Draws the given lines onto a copy of the given image
@@ -45,7 +44,7 @@ def draw_points(image, points):
 
 # Filters out irrelevant lines, returning the ten lines
 # that belong to the sudoku playing field
-def filter_lines(lines):
+def filter_lines(image, lines):
     # Removes lines that are probably duplicates and returns
     # the remaining ones
     def remove_duplicate_lines(lines):
@@ -137,10 +136,44 @@ def get_intersections(h_lines, v_lines):
 # Extracts the fields of the sudoku in the given image
 # using the given intersections as their boundaries
 def extract_fields(image, intersections):
+    def prune_field(field):
+        pruned_field = field.copy()
+
+        def is_done(pruned_field):
+            for i in np.arange(len(pruned_field[0])):
+                if pruned_field[0,i] == 255:
+                    return False
+                elif pruned_field[len(pruned_field)-1,i] == 255:
+                    return False
+            for i in np.arange(len(pruned_field)):
+                if pruned_field[i,0] == 255:
+                    return False
+                elif pruned_field[i,len(pruned_field[0])-1] == 255:
+                    return False
+            return True
+
+
+        while True:
+            if pruned_field.shape[0] <= 2 or field.shape[1] <= 2 :
+                return None
+            if is_done(pruned_field):
+                break
+            pruned_field = pruned_field[1:len(pruned_field)-1, 1:len(pruned_field[0])-1]
+                
+        return pruned_field
+
+    def erode(image):
+        #result = cv2.erode(image, cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3)), iterations=1)
+        result = cv2.morphologyEx(image, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3)))
+        result = cv2.morphologyEx(result, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3)))
+        n = 10
+        result = cv2.copyMakeBorder(result, n, n, n, n, cv2.BORDER_CONSTANT, value=0)
+        return result
+
     if intersections is None:
         return None
 
-    fields = np.ndarray((10,10), np.ndarray)
+    fields = np.ndarray((9,9), np.ndarray)
 
     for i in np.arange(0, 9):
         for j in np.arange(0, 9):
@@ -149,61 +182,29 @@ def extract_fields(image, intersections):
             lower_left = intersections[i+1,j]
             lower_right = intersections[i+1,j+1]
             
-            fields[i,j] = image[int(np.max((upper_left[1], upper_right[1]))):int(np.min((lower_left[1], lower_right[1]))), \
+            field = image[int(np.max((upper_left[1], upper_right[1]))):int(np.min((lower_left[1], lower_right[1]))), \
                 int(np.max((upper_left[0], lower_left[0]))):int(np.min((upper_right[0], lower_right[0])))]
+
+            # Noise reduction and centering
+            fields[i,j] = erode(prune_field(field))
 
     return fields
 
-#cap = cv2.VideoCapture("sudoku2.mp4")    # Use video/webcam as input source
-image = cv2.imread("sudoku3.JPG")       # Use image as input source
-
-ret_val = True
-
-# while-loop keeps reading images from the source until ret_val is false,
-# which means no image has been retrieved from the source
-while ret_val:
-    #ret_val, image = cap.read()
-
+# Encapsulates the whole process of retrieving the sudoku playing field from the given image
+def extract_sudoku(image):
+    # Preprocess image
     image_prep = preprocessing(image)
 
     # Line detection
     lines = cv2.HoughLines(image_prep, 1, np.pi/180, 260)
 
     # Filter Lines
-    horizontal_lines, vertical_lines = filter_lines(lines)
+    horizontal_lines, vertical_lines = filter_lines(image_prep, lines)
 
     # Get intersections
     intersections = get_intersections(horizontal_lines, vertical_lines)
 
     # Extract fields
-    fields = extract_fields(image, intersections)
+    fields = extract_fields(image_prep, intersections)
 
-
-    # Draw Lines
-    image_lines = draw_lines(image, horizontal_lines)
-    image_lines = draw_lines(image_lines, vertical_lines)
-    image_intersects = draw_points(image_lines, intersections)
-
-    # Some visualization of the (intermediate) results
-    #cv2.imshow("Original", image)
-    #cv2.imshow("Image Prep", image_prep)
-    cv2.imshow("Image Intersects", image_intersects)
-    #cv2.imshow("Field 8,8", fields[8,8])
-
-    # OCR TEST
-    sudoku_pf = np.ndarray((9,9), str)
-
-    for i in np.arange(0,9):
-        for j in np.arange(0,9):
-            img = cv2.cvtColor(fields[i,j], cv2.COLOR_BGR2RGB)
-            img = img[10:len(img)-10, 10:len(img[0])-10]
-            result = image_to_string(img, config = r'--oem 0 --psm 10 tessedit_char_whitelist=0123456789')
-            print(result)
-            #sudoku_pf[i,j] = result if (result != "i") else 0
-
-    print(sudoku_pf)
-    break
-
-    key = cv2.waitKey(1)
-    if (key == 27):
-        break
+    return fields, intersections
