@@ -104,7 +104,6 @@ def update_sudoku_pf(pfp, sudoku_pf):
     for i in np.arange(9):
         for j in np.arange(9):
             if sudoku_pf[i,j] == 0:
-                print(len(pfp[i,j]))
                 if len(pfp[i,j]) == 1:
                     sudoku_pf[i,j] = pfp[i,j].pop()
                     is_solved = False
