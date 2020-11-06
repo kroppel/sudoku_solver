@@ -99,13 +99,14 @@ def maintainance_pfp(pfp, sudoku):
                 check_square(i, j, pfp[i,j], sudoku)
 
 # Updates the given sudoku with respect to the given pfp
-def update_sudoku_pf(pfp, sudoku):
+def update_sudoku_pf(pfp, sudoku_pf):
     is_solved = True
     for i in np.arange(9):
         for j in np.arange(9):
             if sudoku_pf[i,j] == 0:
+                print(len(pfp[i,j]))
                 if len(pfp[i,j]) == 1:
-                    sudoku[i,j] = pfp[i,j].pop()
+                    sudoku_pf[i,j] = pfp[i,j].pop()
                     is_solved = False
     return is_solved
 
@@ -113,6 +114,7 @@ def solve_sudoku(sudoku):
     sudoku_pf = np.copy(sudoku)
     pfp = init_pfp(sudoku_pf)
     counter = 0
+
     while True:
         print(counter)
         print(sudoku_pf)
@@ -123,6 +125,7 @@ def solve_sudoku(sudoku):
 
     print(counter)
     print(sudoku_pf)
+    print("End")
 
 
 
