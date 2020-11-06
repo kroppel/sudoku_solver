@@ -5,6 +5,7 @@ from ocr_api_client import recognize_digit_ocr_space
 from ocr_tesseract import recognize_digit_tesseract_ocr
 import concurrent.futures
 import time
+from sudoku_solver import solve_sudoku
 
 def evaluate_ocr(ocr_result):
     sudoku = np.asarray(
@@ -23,19 +24,21 @@ def evaluate_ocr(ocr_result):
     for i in np.arange(9):
         for j in np.arange(9):
             if ocr_result[i,j] == sudoku[i,j]:
-                correct.append((i,j))
+                correct.append((i, j, ocr_result[i,j], sudoku[i,j]))
             else:
-                incorrect.append((i,j))
+                incorrect.append((i, j, ocr_result[i,j], sudoku[i,j]))
     return correct, incorrect
 
 
 
 #cap = cv2.VideoCapture("sudoku2.mp4")    # Use video/webcam as input source
-image = cv2.imread("sudoku3.JPG")       # Use image as input source
+image = cv2.imread("sudoku3.jpg")       # Use image as input source
 
 ret_val = True
 sudoku = None
 solved = False
+
+# If True, ocr.space API is used, if False, Tesseract OCR is used
 use_api = False
 correct, incorrect = [], []
 
@@ -94,11 +97,13 @@ while ret_val:
         print("Execution Time: " + str(stop-start))
         correct, incorrect = evaluate_ocr(sudoku_pf)
         print("Evaluation: " + str(len(correct)) + ", " + str(len(incorrect)))
-        print("Correct: " + str(correct))
+        #print("Correct: " + str(correct))
         print("Incorrect:" + str(incorrect))
 
+        solve_sudoku(sudoku_pf)
+
     image_intersects = draw_points(image, intersections)
-    for i,j in incorrect:
+    for i,j,_,_ in incorrect:
             cv2.imshow(str((i,j)), sudoku[i,j])
 
     # Some visualization of the (intermediate) results
