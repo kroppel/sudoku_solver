@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import time
 
 # Preprocesses the given image, returning a binary representation of it
 def preprocessing(image):
@@ -42,15 +43,30 @@ def draw_points(image, points):
 
     return image_points
 
-def extract_lines(image):
+def extract_about_n_lines(image, iterations = 7):
+    # Parameters for setting an interval, in which the number of retrieved lines has to lie
+    n = 100
+    max_deviation = 20
+
     lines = []
-    min_votes = np.min(image.shape)
+    votes_upper_bound = np.min(image.shape)
+    votes_lower_bound = 0
+    min_votes = int((votes_upper_bound + votes_lower_bound)/2)
 
-    while len(lines) <= 100:
-        lines = cv2.HoughLines(image, 1, np.pi/180, min_votes)
-        min_votes -= 20
+    while (iterations > 0):
+        print(str(min_votes))
+        extracted_lines = cv2.HoughLines(image, 1, np.pi/180, min_votes)
 
-    print(min_votes)
+        if not extracted_lines is None:
+            lines = extracted_lines
+        if len(lines) > n + max_deviation:
+            votes_lower_bound = min_votes
+            min_votes = int((votes_upper_bound + votes_lower_bound)/2)
+        elif len(lines) < n - max_deviation:
+            votes_upper_bound = min_votes
+            min_votes = int((votes_upper_bound + votes_lower_bound)/2)
+        iterations -= 1
+
     return lines
 
 # Filters out irrelevant lines, returning the ten lines
@@ -78,6 +94,10 @@ def filter_lines(image, lines):
         sudoku_lines = lines
         rhos = []
         deviation = 1000
+        rho_deviation_sum = 0
+
+        # Parameter for maximal value of the rho devation sum for the processed set of lines to be counted as sudoku lines
+        deviation_max = 15
 
         for line in lines:
             rho, theta = line
@@ -88,12 +108,19 @@ def filter_lines(image, lines):
             rho_diffs = np.asarray(rho_candidates[1:10]) - np.asarray(rho_candidates[0:9])
             rho_diff_mean = int(np.mean(rho_diffs))
             rho_abs_deviations = np.abs(rho_diffs - rho_diff_mean)
+            max_single_deviation = np.max(rho_abs_deviations) 
             rho_deviation_sum = np.sum(rho_abs_deviations)
 
             if deviation > rho_deviation_sum:
                 deviation = rho_deviation_sum
                 sudoku_lines = lines[i:i+10]
+
+            """print("max single deviation: " + str(max_single_deviation))
+            print("rho deviation sum: " + str(rho_deviation_sum))"""
         
+        if deviation > deviation_max:
+            return []
+
         return sudoku_lines
 
     vertical_lines=[]
@@ -102,7 +129,7 @@ def filter_lines(image, lines):
     # Keep horizontal/vertical lines
     for line in lines:
         rho, theta = line[0]
-        if ((theta > 1.52) and (theta < 1.62)):
+        if ((theta > 1.5407) and (theta < 1.6007)):
             horizontal_lines.append((rho, theta))
         elif ((theta > -0.05) and (theta < 0.05)):      
             vertical_lines.append((rho, theta))
@@ -113,6 +140,7 @@ def filter_lines(image, lines):
 
     # Keep sudoku field lines
     horizontal_lines = keep_sudoku_lines(horizontal_lines)
+    #print("########")
     vertical_lines = keep_sudoku_lines(vertical_lines)
     
     return horizontal_lines, vertical_lines
@@ -173,8 +201,7 @@ def extract_fields(image, intersections):
                 
         return pruned_field
 
-    def erode(image):
-        #result = cv2.erode(image, cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3)), iterations=1)
+    def morphology(image):
         result = cv2.morphologyEx(image, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)))
         result = cv2.morphologyEx(result, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)))
         result = cv2.erode(result, (3,3))
@@ -183,7 +210,7 @@ def extract_fields(image, intersections):
         return result
 
     if intersections is None:
-        return None
+        return None, False
 
     fields = np.ndarray((9,9), np.ndarray)
 
@@ -198,9 +225,9 @@ def extract_fields(image, intersections):
                 int(np.max((upper_left[0], lower_left[0]))):int(np.min((upper_right[0], lower_right[0])))]
 
             # Noise reduction and centering
-            _, fields[i,j] = cv2.threshold(erode(prune_field(field)), 127, 255, cv2.THRESH_BINARY_INV)
+            _, fields[i,j] = cv2.threshold(morphology(prune_field(field)), 127, 255, cv2.THRESH_BINARY_INV)
 
-    return fields
+    return fields, True
 
 # Encapsulates the whole process of retrieving the sudoku playing field from the given image
 def extract_sudoku(image):
@@ -208,7 +235,10 @@ def extract_sudoku(image):
     image_prep = preprocessing(image)
 
     # Line detection
-    lines = extract_lines(image_prep)
+    start = time.time()
+    lines = extract_about_n_lines(image_prep)
+    stop = time.time()
+    print(str(stop-start))
 
     # Filter Lines
     horizontal_lines, vertical_lines = filter_lines(image_prep, lines)
@@ -217,6 +247,6 @@ def extract_sudoku(image):
     intersections = get_intersections(horizontal_lines, vertical_lines)
 
     # Extract fields
-    fields = extract_fields(image_prep, intersections)
+    fields, ret_val = extract_fields(image_prep, intersections)
 
-    return fields, intersections
+    return fields, intersections, horizontal_lines, vertical_lines
