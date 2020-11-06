@@ -42,6 +42,17 @@ def draw_points(image, points):
 
     return image_points
 
+def extract_lines(image):
+    lines = []
+    min_votes = np.min(image.shape)
+
+    while len(lines) <= 100:
+        lines = cv2.HoughLines(image, 1, np.pi/180, min_votes)
+        min_votes -= 20
+
+    print(min_votes)
+    return lines
+
 # Filters out irrelevant lines, returning the ten lines
 # that belong to the sudoku playing field
 def filter_lines(image, lines):
@@ -164,8 +175,9 @@ def extract_fields(image, intersections):
 
     def erode(image):
         #result = cv2.erode(image, cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3)), iterations=1)
-        result = cv2.morphologyEx(image, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3)))
-        result = cv2.morphologyEx(result, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3)))
+        result = cv2.morphologyEx(image, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)))
+        result = cv2.morphologyEx(result, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)))
+        result = cv2.erode(result, (3,3))
         n = 10
         result = cv2.copyMakeBorder(result, n, n, n, n, cv2.BORDER_CONSTANT, value=0)
         return result
@@ -186,7 +198,7 @@ def extract_fields(image, intersections):
                 int(np.max((upper_left[0], lower_left[0]))):int(np.min((upper_right[0], lower_right[0])))]
 
             # Noise reduction and centering
-            fields[i,j] = erode(prune_field(field))
+            _, fields[i,j] = cv2.threshold(erode(prune_field(field)), 127, 255, cv2.THRESH_BINARY_INV)
 
     return fields
 
@@ -196,7 +208,7 @@ def extract_sudoku(image):
     image_prep = preprocessing(image)
 
     # Line detection
-    lines = cv2.HoughLines(image_prep, 1, np.pi/180, 260)
+    lines = extract_lines(image_prep)
 
     # Filter Lines
     horizontal_lines, vertical_lines = filter_lines(image_prep, lines)
