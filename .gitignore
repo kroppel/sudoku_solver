@@ -1,3 +1,6 @@
 *.JPG
 *.mp4
+*.png
+api_key.txt
+benchmark.txt
 __pycache__/
