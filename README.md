@@ -60,7 +60,9 @@ is inspected and states are updated.
 
 ## My project setup
 Python: Python 3.7.4
+
 OpenCV Version: 4.2.0.34
+
 Tesseract OCR: tesseract v4.0.0.20181030
 
 
