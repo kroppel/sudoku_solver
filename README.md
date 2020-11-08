@@ -44,21 +44,29 @@ So I went with tesseract OCR, which is open source, easy to install and worked w
 I also tried ocr.space, which is an OCR engine available through a web api.
 I liked the idea that all the OCR workloads were processed on servers and not on the client machine,
 and that there was no additional software to install.
-But the free usage of their api is limited and I did not want to pay for their services for this little project
+But the free usage of their api is limited and I did not want to pay for their services for this little project.
 
 
 ## Solving the sudoku
+Sudokus are solved by tracking the states of every field in the sudoku.
+The state of a sudoku field is a list of possible numbers that this field can contain.
+Fields that already have a number assigned have an empty state list.
+In each iteration of the solving algorithm, the sudoku states are updated with respect to the sudoku rules.
+These rules are implemented in simple conditional statements, where every row, column and every 3x3 segment
+is inspected and states are updated.
 
 ![Sudoku Solving Example Image](https://user-images.githubusercontent.com/54138402/98471243-38dd7200-21eb-11eb-8686-c1fe07d505aa.PNG)
 
 
 ## My project setup
 Python: Python 3.7.4
+OpenCV Version: 4.2.0.34
 Tesseract OCR: tesseract v4.0.0.20181030
 
 
 ## The sourcecode components
 ### solve_sudoku_from_image.py
+This python script encapsulates the whole process of image obtaining, preprocessing, extracting the sudoku and solving it.
 
 ### detect_sudoku_hough_transform.py
 The script detect_sudoku_hough_transform.py uses opencv hough transformation
@@ -75,5 +83,7 @@ The script sudoku_solver.py is taking in a sudoku puzzle as a two-dimensional ar
 The given sudoku has to be unambiguous and solvable for now.
 
 ### ocr_tesseract.py
+This script implements an interface to interact with tesseract OCR for digit recognition.
 
 ### ocr_api_client.py
+This script implements an interface to interact with ocr.space for digit recognition.
