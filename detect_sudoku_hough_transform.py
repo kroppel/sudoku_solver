@@ -43,7 +43,7 @@ def draw_points(image, points):
 
     return image_points
 
-def extract_about_n_lines(image, iterations = 7):
+def extract_about_n_lines(image, iterations = 1):
     # Parameters for setting an interval, in which the number of retrieved lines has to lie
     n = 100
     max_deviation = 20
@@ -54,7 +54,6 @@ def extract_about_n_lines(image, iterations = 7):
     min_votes = int((votes_upper_bound + votes_lower_bound)/2)
 
     while (iterations > 0):
-        print(str(min_votes))
         extracted_lines = cv2.HoughLines(image, 1, np.pi/180, min_votes)
 
         if not extracted_lines is None:
@@ -71,7 +70,22 @@ def extract_about_n_lines(image, iterations = 7):
 
 # Filters out irrelevant lines, returning the ten lines
 # that belong to the sudoku playing field
-def filter_lines(image, lines):
+def filter_lines(lines):
+    # Removes lines that are neither horizontally nor vertically aligned
+    def get_horizontal_and_vertical_lines(lines):
+        vertical_lines=[]
+        horizontal_lines=[]
+
+        for line in lines:
+            rho, theta = line[0]
+            if ((theta > 1.5407) and (theta < 1.6007)):
+                horizontal_lines.append((rho, theta))
+            elif ((theta > -0.05) and (theta < 0.05)):      
+                vertical_lines.append((rho, theta))
+
+        return horizontal_lines, vertical_lines
+
+
     # Removes lines that are probably duplicates and returns
     # the remaining ones
     def remove_duplicate_lines(lines):
@@ -114,25 +128,14 @@ def filter_lines(image, lines):
             if deviation > rho_deviation_sum:
                 deviation = rho_deviation_sum
                 sudoku_lines = lines[i:i+10]
-
-            """print("max single deviation: " + str(max_single_deviation))
-            print("rho deviation sum: " + str(rho_deviation_sum))"""
         
         if deviation > deviation_max:
             return []
 
         return sudoku_lines
 
-    vertical_lines=[]
-    horizontal_lines=[]
-
     # Keep horizontal/vertical lines
-    for line in lines:
-        rho, theta = line[0]
-        if ((theta > 1.5407) and (theta < 1.6007)):
-            horizontal_lines.append((rho, theta))
-        elif ((theta > -0.05) and (theta < 0.05)):      
-            vertical_lines.append((rho, theta))
+    horizontal_lines, vertical_lines = get_horizontal_and_vertical_lines(lines)
 
     # Filter out similar lines
     horizontal_lines = remove_duplicate_lines(horizontal_lines)
@@ -140,7 +143,6 @@ def filter_lines(image, lines):
 
     # Keep sudoku field lines
     horizontal_lines = keep_sudoku_lines(horizontal_lines)
-    #print("########")
     vertical_lines = keep_sudoku_lines(vertical_lines)
     
     return horizontal_lines, vertical_lines
@@ -235,13 +237,10 @@ def extract_sudoku(image):
     image_prep = preprocessing(image)
 
     # Line detection
-    start = time.time()
     lines = extract_about_n_lines(image_prep)
-    stop = time.time()
-    print(str(stop-start))
-
+    
     # Filter Lines
-    horizontal_lines, vertical_lines = filter_lines(image_prep, lines)
+    horizontal_lines, vertical_lines = filter_lines(lines)
 
     # Get intersections
     intersections = get_intersections(horizontal_lines, vertical_lines)
