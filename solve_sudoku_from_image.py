@@ -78,7 +78,6 @@ while ret_val:
         sudoku, intersections, h_lines, v_lines = extract_sudoku(image)
     
     elif not solved:
-        start = time.time()
         # OCR
         sudoku_pf = np.ndarray((9,9), int)
         futures = []
@@ -88,8 +87,7 @@ while ret_val:
         else:
             sudoku_pf, solved, exec_time = solve_sudoku_from_fields(sudoku, recognize_digit_tesseract_ocr)
 
-        stop = time.time()
-        print("Execution Time: " + str(stop-start))
+        print("Execution Time: " + str(exec_time))
         correct, incorrect = evaluate_ocr(sudoku_pf)
         print("Evaluation: " + str(len(correct)) + ", " + str(len(incorrect)))
         #print("Correct: " + str(correct))
