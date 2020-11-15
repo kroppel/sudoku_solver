@@ -29,10 +29,33 @@ def evaluate_ocr(ocr_result):
                 incorrect.append((i, j, ocr_result[i,j], sudoku[i,j]))
     return correct, incorrect
 
+def solve_sudoku_from_fields(sudoku, ocr_function):
+    # Use tesseract-OCR on every field
+    start = time.time()
+    sudoku_pf = np.ndarray((9,9), int)
+    
+    if sudoku is None:
+        return None, False, None
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        for i in np.arange(9):
+            for j in np.arange(9):
+                futures.append(executor.submit(ocr_function, sudoku[i,j], i, j))
+        for f in futures:
+            result, i, j = f.result()
+            sudoku_pf[i,j] = int(result)
+
+        print(sudoku_pf)
+    
+    stop = time.time()
+    exec_time = stop-start
+
+    return sudoku_pf, True, exec_time
 
 
-#cap = cv2.VideoCapture("sudoku2.mp4")    # Use video/webcam as input source
-image = cv2.imread("sudoku3.jpg")       # Use image as input source
+
+cap = cv2.VideoCapture("sudoku2.mp4")    # Use video/webcam as input source
+#image = cv2.imread("sudoku3.jpg")       # Use image as input source
 
 ret_val = True
 sudoku = None
@@ -41,21 +64,18 @@ solved = False
 # If True, ocr.space API is used, if False, Tesseract OCR is used
 use_api = False
 correct, incorrect = [], []
+intersections, h_lines, v_lines = [], [], []
 
 # while-loop keeps reading images from the source until ret_val is false,
 # which means no image has been retrieved from the source
 while ret_val:
     if sudoku is None:
-        #ret_val, image = cap.read()
+        ret_val, image = cap.read()
+        ret_val, image = cap.read()
+
 
         # Extract Sudoku
-        sudoku, intersections = extract_sudoku(image)
-
-        
-        """cv2.imwrite("OCR_Img_2_1.png", sudoku[2,1])
-        cv2.imwrite("OCR_Img_4_0.png", sudoku[4,0])
-
-        break"""
+        sudoku, intersections, h_lines, v_lines = extract_sudoku(image)
     
     elif not solved:
         start = time.time()
@@ -64,34 +84,9 @@ while ret_val:
         futures = []
 
         if use_api:
-            # Read Api-Key from text file (insert your own here!)
-            api_key = open("api_key.txt", "r").readline()
-
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                for i in np.arange(9):
-                    for j in np.arange(9):
-                        futures.append(executor.submit(recognize_digit_ocr_space, sudoku[i,j], api_key, i, j))
-            for f in futures:
-                result, i, j = f.result()
-                sudoku_pf[i,j] = int(result)
-                #print(str(result))
-                        
-            solved = True
-            print(sudoku_pf)
-
+            sudoku_pf, solved, exec_time = solve_sudoku_from_fields(sudoku, recognize_digit_ocr_space)
         else:
-            # Use tesseract-OCR on every field
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                for i in np.arange(9):
-                    for j in np.arange(9):
-                        futures.append(executor.submit(recognize_digit_tesseract_ocr, sudoku[i,j], i, j))
-            for f in futures:
-                result, i, j = f.result()
-                sudoku_pf[i,j] = int(result)
-                #print(str(result))
-
-            solved = True
-            print(sudoku_pf)
+            sudoku_pf, solved, exec_time = solve_sudoku_from_fields(sudoku, recognize_digit_tesseract_ocr)
 
         stop = time.time()
         print("Execution Time: " + str(stop-start))
@@ -102,13 +97,17 @@ while ret_val:
 
         solve_sudoku(sudoku_pf)
 
-    image_intersects = draw_points(image, intersections)
-    for i,j,_,_ in incorrect:
-            cv2.imshow(str((i,j)), sudoku[i,j])
+    #image_intersects = draw_points(image, intersections)
+    image_lines = draw_lines(image, h_lines)
+    image_lines = draw_lines(image_lines, v_lines)
+
+    """for i,j,_,_ in incorrect:
+            cv2.imshow(str((i,j)), sudoku[i,j])"""
 
     # Some visualization of the (intermediate) results
 
-    cv2.imshow("Image Intersects", image_intersects)
+    #cv2.imshow("Image Intersects", image_intersects)
+    cv2.imshow("Image Lines", image_lines)
 
 
     key = cv2.waitKey(1)
