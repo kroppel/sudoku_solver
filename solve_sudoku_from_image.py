@@ -6,6 +6,7 @@ from ocr_tesseract import recognize_digit_tesseract_ocr
 import concurrent.futures
 import time
 from sudoku_solver import solve_sudoku
+from sys import argv
 
 def evaluate_ocr(ocr_result):
     sudoku = np.asarray(
@@ -53,8 +54,8 @@ def solve_sudoku_from_fields(sudoku, ocr_function):
     return sudoku_pf, True, exec_time
 
 
-
-cap = cv2.VideoCapture("sudoku2.mp4")    # Use video/webcam as input source
+input = 0 if len(argv) == 1 else argv[1]
+cap = cv2.VideoCapture(input)    # Use video/webcam as input source
 #image = cv2.imread("sudoku3.jpg")       # Use image as input source
 
 ret_val = True
