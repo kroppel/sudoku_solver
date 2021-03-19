@@ -51,7 +51,7 @@ def extract_about_n_lines(image, iterations = 1):
     lines = []
     votes_upper_bound = np.min(image.shape)
     votes_lower_bound = 0
-    min_votes = int((votes_upper_bound + votes_lower_bound)/2)
+    min_votes = int((votes_upper_bound + votes_lower_bound)/3)
 
     while (iterations > 0):
         extracted_lines = cv2.HoughLines(image, 1, np.pi/180, min_votes)
