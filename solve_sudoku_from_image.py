@@ -74,6 +74,9 @@ while ret_val:
         ret_val, image = cap.read()
         ret_val, image = cap.read()
 
+        if not ret_val:
+            print("Video ended")
+            break
 
         # Extract Sudoku
         sudoku, intersections, h_lines, v_lines = extract_sudoku(image)
