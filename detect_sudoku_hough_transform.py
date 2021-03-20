@@ -1,31 +1,32 @@
-import numpy as np
-import cv2
-import time
+from numpy import cos, sin, copy, min, pi, arange, asarray, mean, abs, max, sum, ndarray
+from cv2 import cvtColor, COLOR_BGR2GRAY, adaptiveThreshold, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY_INV, line, circle, \
+     HoughLines, morphologyEx, MORPH_OPEN, getStructuringElement, MORPH_ELLIPSE, MORPH_CLOSE, erode, copyMakeBorder, BORDER_CONSTANT, \
+    threshold
 
 # Preprocesses the given image, returning a binary representation of it
 def preprocessing(image):
-    image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    image_threshold = cv2.adaptiveThreshold(src=image_gray, maxValue=255, \
-        adaptiveMethod=cv2.ADAPTIVE_THRESH_MEAN_C, thresholdType=cv2.THRESH_BINARY_INV, blockSize=15, C=6)
+    image_gray =cvtColor(image,COLOR_BGR2GRAY)
+    image_threshold = adaptiveThreshold(src=image_gray, maxValue=255, \
+        adaptiveMethod = ADAPTIVE_THRESH_MEAN_C, thresholdType = THRESH_BINARY_INV, blockSize=15, C=6)
     
     return image_threshold
 
 # Draws the given lines onto a copy of the given image
 # and returns it
 def draw_lines(image, lines):
-    image_lines = np.copy(image)
+    image_lines = copy(image)
 
     for line in lines:
         rho,theta = line
-        a = np.cos(theta)
-        b = np.sin(theta)
+        a = cos(theta)
+        b = sin(theta)
         x0 = a*rho
         y0 = b*rho
         x1 = int(x0 + 1000*(-b))
         y1 = int(y0 + 1000*(a))
         x2 = int(x0 - 1000*(-b))
         y2 = int(y0 - 1000*(a))
-        cv2.line(image_lines,(x1,y1),(x2,y2),(0,0,255),2)
+        line(image_lines,(x1,y1),(x2,y2),(0,0,255),2)
 
     return image_lines
 
@@ -35,11 +36,11 @@ def draw_points(image, points):
     if points is None:
         return image
 
-    image_points = np.copy(image)
+    image_points = copy(image)
 
     for line in points:
         for point in line:
-            cv2.circle(image_points, point, 3, (0, 255, 0), 5)
+            circle(image_points, point, 3, (0, 255, 0), 5)
 
     return image_points
 
@@ -49,12 +50,12 @@ def extract_about_n_lines(image, iterations = 1):
     max_deviation = 20
 
     lines = []
-    votes_upper_bound = np.min(image.shape)
+    votes_upper_bound = min(image.shape)
     votes_lower_bound = 0
     min_votes = int((votes_upper_bound + votes_lower_bound)/3)
 
     while (iterations > 0):
-        extracted_lines = cv2.HoughLines(image, 1, np.pi/180, min_votes)
+        extracted_lines = HoughLines(image, 1, pi/180, min_votes)
 
         if not extracted_lines is None:
             lines = extracted_lines
@@ -117,13 +118,13 @@ def filter_lines(lines):
             rho, theta = line
             rhos.append(rho)
 
-        for i in np.arange(0, len(lines)-9):
+        for i in arange(0, len(lines)-9):
             rho_candidates = rhos[i:i+10]
-            rho_diffs = np.asarray(rho_candidates[1:10]) - np.asarray(rho_candidates[0:9])
-            rho_diff_mean = int(np.mean(rho_diffs))
-            rho_abs_deviations = np.abs(rho_diffs - rho_diff_mean)
-            max_single_deviation = np.max(rho_abs_deviations) 
-            rho_deviation_sum = np.sum(rho_abs_deviations)
+            rho_diffs = asarray(rho_candidates[1:10]) - asarray(rho_candidates[0:9])
+            rho_diff_mean = int(mean(rho_diffs))
+            rho_abs_deviations = abs(rho_diffs - rho_diff_mean)
+            max_single_deviation = max(rho_abs_deviations) 
+            rho_deviation_sum = sum(rho_abs_deviations)
 
             if deviation > rho_deviation_sum:
                 deviation = rho_deviation_sum
@@ -153,11 +154,11 @@ def get_intersections(h_lines, v_lines):
     if (len(h_lines) != 10) or (len(v_lines) != 10):
         return None
 
-    intersections = np.ndarray((10,10), tuple)
+    intersections = ndarray((10,10), tuple)
 
-    for i in np.arange(0, 10):
+    for i in arange(0, 10):
         h_line = h_lines[i]
-        for j in np.arange(0, 10):
+        for j in arange(0, 10):
             v_line = v_lines[j]
             h_rho, h_theta = h_line
             v_rho, v_theta = v_line
@@ -166,9 +167,9 @@ def get_intersections(h_lines, v_lines):
             if (v_theta == 0):
                 x_i = v_rho
             else:
-                x_i = ((h_rho * np.sin(v_theta)) - (v_rho * np.sin(h_theta))) / \
-                    ((np.cos(h_theta) * np.sin(v_theta)) - (np.cos(v_theta) * np.sin(h_theta)))
-            y_i = ((h_rho / np.sin(h_theta)) - (x_i * (np.cos(h_theta) / np.sin(h_theta))))
+                x_i = ((h_rho * sin(v_theta)) - (v_rho * sin(h_theta))) / \
+                    ((cos(h_theta) * sin(v_theta)) - (cos(v_theta) * sin(h_theta)))
+            y_i = ((h_rho / sin(h_theta)) - (x_i * (cos(h_theta) / sin(h_theta))))
             
             intersections[i,j] = (x_i, y_i)
 
@@ -181,12 +182,12 @@ def extract_fields(image, intersections):
         pruned_field = field.copy()
 
         def is_done(pruned_field):
-            for i in np.arange(len(pruned_field[0])):
+            for i in arange(len(pruned_field[0])):
                 if pruned_field[0,i] == 255:
                     return False
                 elif pruned_field[len(pruned_field)-1,i] == 255:
                     return False
-            for i in np.arange(len(pruned_field)):
+            for i in arange(len(pruned_field)):
                 if pruned_field[i,0] == 255:
                     return False
                 elif pruned_field[i,len(pruned_field[0])-1] == 255:
@@ -204,30 +205,30 @@ def extract_fields(image, intersections):
         return pruned_field
 
     def morphology(image):
-        result = cv2.morphologyEx(image, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)))
-        result = cv2.morphologyEx(result, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3)))
-        result = cv2.erode(result, (3,3))
+        result = morphologyEx(image, MORPH_OPEN, getStructuringElement(MORPH_ELLIPSE,(3,3)))
+        result = morphologyEx(result, MORPH_CLOSE, getStructuringElement(MORPH_ELLIPSE,(3,3)))
+        result = erode(result, (3,3))
         n = 10
-        result = cv2.copyMakeBorder(result, n, n, n, n, cv2.BORDER_CONSTANT, value=0)
+        result = copyMakeBorder(result, n, n, n, n, BORDER_CONSTANT, value=0)
         return result
 
     if intersections is None:
         return None, False
 
-    fields = np.ndarray((9,9), np.ndarray)
+    fields = ndarray((9,9), ndarray)
 
-    for i in np.arange(0, 9):
-        for j in np.arange(0, 9):
+    for i in arange(0, 9):
+        for j in arange(0, 9):
             upper_left = intersections[i,j]
             upper_right = intersections[i,j+1]
             lower_left = intersections[i+1,j]
             lower_right = intersections[i+1,j+1]
             
-            field = image[int(np.max((upper_left[1], upper_right[1]))):int(np.min((lower_left[1], lower_right[1]))), \
-                int(np.max((upper_left[0], lower_left[0]))):int(np.min((upper_right[0], lower_right[0])))]
+            field = image[int(max((upper_left[1], upper_right[1]))):int(min((lower_left[1], lower_right[1]))), \
+                int(max((upper_left[0], lower_left[0]))):int(min((upper_right[0], lower_right[0])))]
 
             # Noise reduction and centering
-            _, fields[i,j] = cv2.threshold(morphology(prune_field(field)), 127, 255, cv2.THRESH_BINARY_INV)
+            _, fields[i,j] = threshold(morphology(prune_field(field)), 127, 255, THRESH_BINARY_INV)
 
     return fields, True
 

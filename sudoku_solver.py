@@ -1,4 +1,4 @@
-import numpy as np
+from numpy import arange, asarray, zeros, copy
 
 """
 In this script a sudoku puzzle is represented as a 
@@ -11,9 +11,9 @@ for each field, which is empty if the number is already determined.
 
 # Initializes a new pfp for the given sudoku
 def init_pfp(sudoku):
-    pfp = np.zeros(shape=(9,9), dtype=list)
-    for i in np.arange(9):
-        for j in np.arange(9):
+    pfp = zeros(shape=(9,9), dtype=list)
+    for i in arange(9):
+        for j in arange(9):
             # Check, if field has already an assigned value
             if (sudoku[i,j] == 0):
                 pfp[i,j] = [1,2,3,4,5,6,7,8,9]
@@ -91,8 +91,8 @@ def maintainance_pfp(pfp, sudoku):
                             pfp_entry.remove(digit)
 
     # Iterate over pfp and apply above check functions
-    for i in np.arange(9):
-        for j in np.arange(9):
+    for i in arange(9):
+        for j in arange(9):
             if len(pfp[i,j]) > 0:
                 check_row(i, pfp[i,j], sudoku)
                 check_col(j, pfp[i,j], sudoku)
@@ -101,8 +101,8 @@ def maintainance_pfp(pfp, sudoku):
 # Updates the given sudoku with respect to the given pfp
 def update_sudoku_pf(pfp, sudoku_pf):
     is_solved = True
-    for i in np.arange(9):
-        for j in np.arange(9):
+    for i in arange(9):
+        for j in arange(9):
             if sudoku_pf[i,j] == 0:
                 if len(pfp[i,j]) == 1:
                     sudoku_pf[i,j] = pfp[i,j].pop()
@@ -110,7 +110,7 @@ def update_sudoku_pf(pfp, sudoku_pf):
     return is_solved
 
 def solve_sudoku(sudoku):
-    sudoku_pf = np.copy(sudoku)
+    sudoku_pf = copy(sudoku)
     pfp = init_pfp(sudoku_pf)
     counter = 0
 
@@ -128,7 +128,7 @@ def solve_sudoku(sudoku):
 
 
 
-sudoku_initial_pf = np.asarray(
+sudoku_initial_pf = asarray(
     [[0,0,0,9,0,0,7,2,8],
     [2,7,8,0,0,3,0,1,0],
     [0,9,0,0,0,0,6,4,0],
@@ -140,5 +140,5 @@ sudoku_initial_pf = np.asarray(
     [7,0,9,1,0,0,8,0,5]],
     dtype=int)
 
-sudoku_pf = np.copy(sudoku_initial_pf)
+sudoku_pf = copy(sudoku_initial_pf)
 pfp = init_pfp(sudoku_pf)

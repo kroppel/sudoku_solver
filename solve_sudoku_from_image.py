@@ -1,15 +1,15 @@
-import numpy as np
-import cv2
+from numpy import arange, asarray, ndarray
+from cv2 import VideoCapture, imread, imshow, waitKey
 from detect_sudoku_hough_transform import extract_sudoku, draw_lines, draw_points
 from ocr_api_client import recognize_digit_ocr_space
 from ocr_tesseract import recognize_digit_tesseract_ocr
-import concurrent.futures
-import time
+from concurrent.futures import ThreadPoolExecutor
+from time import time
 from sudoku_solver import solve_sudoku
 from sys import argv
 
 def evaluate_ocr(ocr_result):
-    sudoku = np.asarray(
+    sudoku = asarray(
     [[9,0,3,6,0,0,0,8,0],
     [2,0,6,9,0,0,0,0,4],
     [0,1,0,0,5,0,6,0,0],
@@ -22,8 +22,8 @@ def evaluate_ocr(ocr_result):
     dtype=int)
 
     correct, incorrect = [], [] 
-    for i in np.arange(9):
-        for j in np.arange(9):
+    for i in arange(9):
+        for j in arange(9):
             if ocr_result[i,j] == sudoku[i,j]:
                 correct.append((i, j, ocr_result[i,j], sudoku[i,j]))
             else:
@@ -32,15 +32,15 @@ def evaluate_ocr(ocr_result):
 
 def solve_sudoku_from_fields(sudoku, ocr_function):
     # Use tesseract-OCR on every field
-    start = time.time()
-    sudoku_pf = np.ndarray((9,9), int)
+    start = time()
+    sudoku_pf = ndarray((9,9), int)
     
     if sudoku is None:
         return None, False, None
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        for i in np.arange(9):
-            for j in np.arange(9):
+        for i in arange(9):
+            for j in arange(9):
                 futures.append(executor.submit(ocr_function, sudoku[i,j], i, j))
         for f in futures:
             result, i, j = f.result()
@@ -48,15 +48,15 @@ def solve_sudoku_from_fields(sudoku, ocr_function):
 
         print(sudoku_pf)
     
-    stop = time.time()
+    stop = time()
     exec_time = stop-start
 
     return sudoku_pf, True, exec_time
 
 
 input = 0 if len(argv) == 1 else argv[1]
-cap = cv2.VideoCapture(input)    # Use video/webcam as input source
-#image = cv2.imread("sudoku3.jpg")       # Use image as input source
+cap = VideoCapture(input)    # Use video/webcam as input source
+#image = imread("sudoku3.jpg")       # Use image as input source
 
 ret_val = True
 sudoku = None
@@ -83,7 +83,7 @@ while ret_val:
     
     elif not solved:
         # OCR
-        sudoku_pf = np.ndarray((9,9), int)
+        sudoku_pf = ndarray((9,9), int)
         futures = []
 
         if use_api:
@@ -104,14 +104,14 @@ while ret_val:
     image_lines = draw_lines(image_lines, v_lines)
 
     """for i,j,_,_ in incorrect:
-            cv2.imshow(str((i,j)), sudoku[i,j])"""
+            imshow(str((i,j)), sudoku[i,j])"""
 
     # Some visualization of the (intermediate) results
 
-    #cv2.imshow("Image Intersects", image_intersects)
-    cv2.imshow("Image Lines", image_lines)
+    #imshow("Image Intersects", image_intersects)
+    imshow("Image Lines", image_lines)
 
 
-    key = cv2.waitKey(1)
+    key = waitKey(1)
     if (key == 27):
         break

@@ -1,23 +1,23 @@
-import cv2
-import io
-import requests
-import json
+from cv2 import imencode
+from io import BytesIO
+from requests import post
+from json import loads
 
 def request_ocr(image):
     # Read Api-Key from text file (insert your own here!)
     api_key = open("api_key.txt", "r").readline()
 
     # Encode and compress Image
-    _, compressed_image = cv2.imencode(".jpg", image, [1, 100])
+    _, compressed_image = imencode(".jpg", image, [1, 100])
 
     # Get bytes of image
-    image_bytes = io.BytesIO(compressed_image)
+    image_bytes = BytesIO(compressed_image)
 
     # send POST request to OCR API and receive result
-    response = requests.post(url="https://api.ocr.space/parse/image", files = {"field.jpg": image_bytes}, data = {"apikey": api_key, "ocrengine": 2, "scale": True})
+    response = post(url="https://api.ocr.space/parse/image", files = {"field.jpg": image_bytes}, data = {"apikey": api_key, "ocrengine": 2, "scale": True})
     
     # "unwrap" result and return the relevant information
-    response_content = json.loads(response.content.decode())
+    response_content = loads(response.content.decode())
     
     #print(str(response_content))
     parsed_text = response_content.get("ParsedResults")[0].get("ParsedText")
