@@ -17,32 +17,32 @@ Extracting the sudoku from the given image consists of the following steps:
 
 ### 1. Preprocessing
 Here I converted the given BGR input image into a greyscale one,
-and used adaptive threshold to obtain a binary image.
+and used adaptive thresholding to obtain a binary image.
 
 ### 2. Detecting lines
-To detect lines on the preprocessed image I used hough transformation.
-Then I filtered out those lines, that are most likely to represent the sudoku.
+To detect lines on the preprocessed image I used Hough Transformation.
+Then I filtered all lines but those that are most likely to represent the sudoku lines.
 First I filtered out duplicated lines, as it is in the nature of the hough transformation that
-the maximum in hough space usually spreads out over more than one line parameter pairs.
+the maximum in hough space usually spreads out over more than one pair of line parameters.
 Then I removed all lines that were neither horizontally nor vertically aligned.
 Finally I iterated through the remaining horizontal and vertical lines respectively and searched for a group of ten adjacent lines
-that roughly have the same pairwise distance to their direct neighbours.
-The most fitting two groups of lines are returned.
+that roughly have the same pairwise distance with their direct neighbours.
+The most fitting two sets of lines are returned.
 
 ### 3. Extracting the number fields
 Using the detected sudoku lines, I computed the intersections for each horizontal/vertical line pair.
 The intersections define the boundaries for the sudoku number fields.
 For the sake of good OCR results, the extracted fields are also preprocessed.
-That means they were pruned to cut away possible remains of the fields bounding lines.
-Then they were inverted, because after playing around with my OCR engines for a while I noticed
-that improves the results a lot.
+That means they were pruned to cut away possible remains of the fields' bounding lines.
+Then they were inverted, because after playing around with the OCR engines for a while I noticed
+that improves the results quite a bit.
 
 ### 4. OCR
 I did not want to implement an OCR engine myself, because the results would probably not be sufficient
 for efficient OCR within an acceptable execution time.
 So I went with tesseract OCR, which is open source, easy to install and worked well.
 I also tried ocr.space, which is an OCR engine available through a web api.
-I liked the idea that all the OCR workloads were processed on servers and not on the client machine,
+I liked the idea that all the OCR workloads were processed on a server and not on the client host,
 and that there was no additional software to install.
 But the free usage of their api is limited and I did not want to pay for their services for this little project.
 
