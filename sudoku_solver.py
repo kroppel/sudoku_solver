@@ -98,6 +98,81 @@ def maintainance_pfp(pfp, sudoku):
                 check_col(j, pfp[i,j], sudoku)
                 check_square(i, j, pfp[i,j], sudoku)
 
+# Check for rows, columns and squares with only one possibility for one of the numbers between 1 and 9 and fill the corresponding fields
+def check_possibilities(pfp, sudoku):
+    def check_prows(pfp, sudoku):
+        is_solved = True
+    
+        for i in arange(9):
+            p_hist = zeros(9)
+
+            for j in arange(9):
+                for entry in pfp[i,j]:
+                    p_hist[entry-1] += 1
+            
+            for k in arange(1,10):
+                if (p_hist[k-1] == 1):
+                    for j in arange(9):
+                        for entry in pfp[i,j]:
+                            if (entry == k):
+                                pfp[i,j] = []
+                                sudoku[i,j] = k
+                                maintainance_pfp(pfp, sudoku)
+                                is_solved = False
+        return is_solved
+
+
+    def check_pcolumns(pfp, sudoku):
+        is_solved = True
+
+        for i in arange(9):
+            p_hist = zeros(9)
+
+            for j in arange(9):
+                for entry in pfp[j,i]:
+                    p_hist[entry-1] += 1
+
+            for k in arange(1,10):
+                if (p_hist[k-1] == 1):
+                    for j in arange(9):
+                        for entry in pfp[j,i]:
+                            if (entry == k):
+                                pfp[j,i] = []
+                                sudoku[j,i] = k
+                                maintainance_pfp(pfp, sudoku)
+                                is_solved = False
+        return is_solved
+
+    def check_psquares(pfp, sudoku):
+        is_solved = True
+        offsets = [0, 3, 6]
+        
+        for offset_row in offsets:
+            for offset_col in offsets:
+                p_hist = zeros(9)
+   
+                for i in arange(offset_row, 3 + offset_row):
+                    for j in arange(offset_col, 3 + offset_col):
+                        for entry in pfp[i,j]:
+                            p_hist[entry-1] += 1
+
+                for k in arange(1,10):
+                    if (p_hist[k-1] == 1):
+                        for i in arange(offset_row, 3 + offset_row):
+                            for j in arange(offset_col, 3 + offset_col):
+                                for entry in pfp[i,j]:
+                                    if (entry == k):
+                                        pfp[j,i] = []
+                                        sudoku[i,j] = k
+                                        maintainance_pfp(pfp, sudoku)
+                                        is_solved = False
+        return is_solved
+                                
+    
+    return (check_prows(pfp, sudoku) and check_pcolumns(pfp, sudoku) and check_psquares(pfp, sudoku))
+    
+        
+
 # Updates the given sudoku with respect to the given pfp
 def update_sudoku_pf(pfp, sudoku_pf):
     is_solved = True
@@ -119,7 +194,7 @@ def solve_sudoku(sudoku):
         print(sudoku_pf)
         counter += 1
         maintainance_pfp(pfp, sudoku_pf)
-        if update_sudoku_pf(pfp, sudoku_pf):
+        if update_sudoku_pf(pfp, sudoku_pf) and check_possibilities(pfp, sudoku_pf):
             break
 
     print(counter)
@@ -129,16 +204,15 @@ def solve_sudoku(sudoku):
 
 
 sudoku_initial_pf = asarray(
-    [[0,0,0,9,0,0,7,2,8],
-    [2,7,8,0,0,3,0,1,0],
-    [0,9,0,0,0,0,6,4,0],
-    [0,5,0,0,6,0,2,0,0],
-    [0,0,6,0,0,0,3,0,0],
-    [0,1,0,0,5,0,0,0,0],
-    [1,0,0,7,0,6,0,3,4],
-    [0,0,0,5,0,4,0,0,0],
-    [7,0,9,1,0,0,8,0,5]],
+    [[7,0,4,0,0,0,0,0,0],
+    [0,0,0,3,0,0,1,7,0],
+    [0,0,1,0,6,0,5,0,8],
+    [0,0,0,0,3,1,0,0,2],
+    [0,7,0,5,0,4,0,6,0],
+    [3,0,0,8,7,0,0,0,0],
+    [2,0,5,0,8,0,4,0,0],
+    [0,6,3,0,0,2,0,0,0],
+    [0,0,0,0,0,0,2,0,5]],
     dtype=int)
 
-sudoku_pf = copy(sudoku_initial_pf)
-pfp = init_pfp(sudoku_pf)
+solve_sudoku(sudoku_initial_pf)
