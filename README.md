@@ -65,6 +65,8 @@ OpenCV Version: 4.2.0.34
 
 Tesseract OCR: tesseract v4.0.0.20181030
 
+Python Tesseract Wrapper: pytesseract 0.3.8
+
 
 ## The sourcecode components
 ### solve_sudoku_from_image.py
