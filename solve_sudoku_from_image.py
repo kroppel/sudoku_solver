@@ -38,7 +38,7 @@ def solve_sudoku_from_fields(sudoku, ocr_function):
     if sudoku is None:
         return None, False, None
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with ThreadPoolExecutor() as executor:
         for i in arange(9):
             for j in arange(9):
                 futures.append(executor.submit(ocr_function, sudoku[i,j], i, j))
