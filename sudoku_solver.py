@@ -215,4 +215,3 @@ sudoku_initial_pf = asarray(
     [0,0,0,0,0,0,2,0,5]],
     dtype=int)
 
-solve_sudoku(sudoku_initial_pf)
