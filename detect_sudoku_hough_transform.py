@@ -16,8 +16,8 @@ def preprocessing(image):
 def draw_lines(image, lines):
     image_lines = copy(image)
 
-    for l in lines:
-        rho,theta = l
+    for dline in lines:
+        rho,theta = dline
         a = cos(theta)
         b = sin(theta)
         x0 = a*rho
