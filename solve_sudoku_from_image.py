@@ -38,7 +38,7 @@ def solve_sudoku_from_fields(sudoku, ocr_function):
     if sudoku is None:
         return None, False, None
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with ThreadPoolExecutor() as executor:
         for i in arange(9):
             for j in arange(9):
                 futures.append(executor.submit(ocr_function, sudoku[i,j], i, j))
@@ -55,8 +55,8 @@ def solve_sudoku_from_fields(sudoku, ocr_function):
 
 
 input = 0 if len(argv) == 1 else argv[1]
-cap = VideoCapture(input)    # Use video/webcam as input source
-#image = imread("sudoku3.jpg")       # Use image as input source
+#cap = VideoCapture(input)    # Use video/webcam as input source
+image = imread("sudoku6.jpg")       # Use image as input source
 
 ret_val = True
 sudoku = None
@@ -71,8 +71,8 @@ intersections, h_lines, v_lines = [], [], []
 # which means no image has been retrieved from the source
 while ret_val:
     if sudoku is None:
-        ret_val, image = cap.read()
-        ret_val, image = cap.read()
+        #ret_val, image = cap.read()
+        #ret_val, image = cap.read()
 
         if not ret_val:
             print("Video ended")
@@ -80,6 +80,10 @@ while ret_val:
 
         # Extract Sudoku
         sudoku, intersections, h_lines, v_lines = extract_sudoku(image)
+        """imshow("test", sudoku[2,5])
+        key = waitKey(1)
+        if (key == 27):
+            break"""
     
     elif not solved:
         # OCR

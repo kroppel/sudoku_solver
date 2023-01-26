@@ -16,8 +16,8 @@ def preprocessing(image):
 def draw_lines(image, lines):
     image_lines = copy(image)
 
-    for line in lines:
-        rho,theta = line
+    for l in lines:
+        rho,theta = l
         a = cos(theta)
         b = sin(theta)
         x0 = a*rho
@@ -178,10 +178,40 @@ def get_intersections(h_lines, v_lines):
 # Extracts the fields of the sudoku in the given image
 # using the given intersections as their boundaries
 def extract_fields(image, intersections):
+    additional_prune = 5
     def prune_field(field):
         pruned_field = field.copy()
+        pruning_mask = field==255
 
-        def is_done(pruned_field):
+        row_mask = sum(pruning_mask, axis=1)==pruned_field.shape[1]
+        col_mask = sum(pruning_mask, axis=0)==pruned_field.shape[0]
+
+        row_min, col_min = 0, 0
+        row_max, col_max = pruned_field.shape[0], pruned_field.shape[1]
+
+        for i in arange(pruned_field.shape[0]):
+            if row_mask[i] == 0:
+                row_min = i
+                break
+        for i in arange(pruned_field.shape[1]):
+            if col_mask[i] == 0:
+                col_min = i
+                break
+        for i in arange(1, pruned_field.shape[0]+1):
+            if row_mask[-i] == 0:
+                row_max = -i+1
+                break
+        for i in arange(1, pruned_field.shape[1]+1):
+            if col_mask[-i] == 0:
+                col_max = -i+1
+
+        # return unpruned image if no number in it
+        if row_min >= row_max or col_min >= col_max:
+            return pruned_field[additional_prune:-additional_prune+1,additional_prune:-additional_prune+1]
+
+
+
+        """def is_done(pruned_field, pruning_mask):
             for i in arange(len(pruned_field[0])):
                 if pruned_field[0,i] == 255:
                     return False
@@ -200,8 +230,11 @@ def extract_fields(image, intersections):
                 return None
             if is_done(pruned_field):
                 break
-            pruned_field = pruned_field[1:len(pruned_field)-1, 1:len(pruned_field[0])-1]
-                
+            pruned_field = pruned_field[1:len(pruned_field)-1, 1:len(pruned_field[0])-1]"""
+      
+    
+        pruned_field = pruned_field[row_min+additional_prune:row_max-additional_prune, col_min+additional_prune:col_max-additional_prune]
+        
         return pruned_field
 
     def morphology(image):
@@ -228,7 +261,9 @@ def extract_fields(image, intersections):
                 int(max((upper_left[0], lower_left[0]))):int(min((upper_right[0], lower_right[0])))]
 
             # Noise reduction and centering
-            _, fields[i,j] = threshold(morphology(prune_field(field)), 127, 255, THRESH_BINARY_INV)
+            #_, fields[i,j] = threshold(morphology(prune_field(field)), 127, 255, THRESH_BINARY_INV)
+
+            _, fields[i,j] = threshold(prune_field(field), 127, 255, THRESH_BINARY_INV)
 
     return fields, True
 
