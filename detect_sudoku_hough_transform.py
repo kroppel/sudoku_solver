@@ -179,6 +179,7 @@ def get_intersections(h_lines, v_lines):
 # using the given intersections as their boundaries
 def extract_fields(image, intersections):
     additional_prune = 5
+    
     def prune_field(field):
         pruned_field = field.copy()
         pruning_mask = field==255
@@ -208,30 +209,6 @@ def extract_fields(image, intersections):
         # return unpruned image if no number in it
         if row_min >= row_max or col_min >= col_max:
             return pruned_field[additional_prune:-additional_prune+1,additional_prune:-additional_prune+1]
-
-
-
-        """def is_done(pruned_field, pruning_mask):
-            for i in arange(len(pruned_field[0])):
-                if pruned_field[0,i] == 255:
-                    return False
-                elif pruned_field[len(pruned_field)-1,i] == 255:
-                    return False
-            for i in arange(len(pruned_field)):
-                if pruned_field[i,0] == 255:
-                    return False
-                elif pruned_field[i,len(pruned_field[0])-1] == 255:
-                    return False
-            return True
-
-
-        while True:
-            if pruned_field.shape[0] <= 2 or field.shape[1] <= 2 :
-                return None
-            if is_done(pruned_field):
-                break
-            pruned_field = pruned_field[1:len(pruned_field)-1, 1:len(pruned_field[0])-1]"""
-      
     
         pruned_field = pruned_field[row_min+additional_prune:row_max-additional_prune, col_min+additional_prune:col_max-additional_prune]
         

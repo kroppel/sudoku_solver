@@ -56,7 +56,7 @@ def solve_sudoku_from_fields(sudoku, ocr_function):
 
 input = 0 if len(argv) == 1 else argv[1]
 #cap = VideoCapture(input)    # Use video/webcam as input source
-image = imread("sudoku6.jpg")       # Use image as input source
+image = imread("media/sudoku7.jpg")       # Use image as input source
 
 ret_val = True
 sudoku = None
